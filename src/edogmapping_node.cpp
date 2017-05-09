@@ -28,6 +28,7 @@
 #include "motion_update/motionmodel.h"
 #include "sensor_update/smmap.h"
 #include "sensor_update/scanmatcher.h"
+#include "sensor_update/smmap.h"
 #include "utils/stat.h"
 #include "utils/point.h"
 #include "particlefilter/particlefilter.h"
@@ -264,19 +265,21 @@ void EDOGMappingNode::init()
   private_nh_.param("astep", astep_, 0.05);
   private_nh_.param("iterations", iterations_, 5);
   private_nh_.param("lsigma", lsigma_, 0.075);
-  // private_nh_.param("alpha1", alpha1_, 0.02);
-  // private_nh_.param("alpha2", alpha2_, 0.02);
-  // private_nh_.param("alpha3", alpha3_, 0.09);
-  // private_nh_.param("alpha4", alpha4_, 0.04);
-  private_nh_.param("alpha1", alpha1_, 0.2);
-  private_nh_.param("alpha2", alpha2_, 0.2);
-  private_nh_.param("alpha3", alpha3_, 0.9);
-  private_nh_.param("alpha4", alpha4_, 0.4);
+  private_nh_.param("alpha1", alpha1_, 0.02);
+  private_nh_.param("alpha2", alpha2_, 0.02);
+  private_nh_.param("alpha3", alpha3_, 0.08);
+  private_nh_.param("alpha4", alpha4_, 0.04);
+  // private_nh_.param("alpha1", alpha1_, 0.3);
+  // private_nh_.param("alpha2", alpha2_, 0.3);
+  // private_nh_.param("alpha3", alpha3_, 0.7);
+  // private_nh_.param("alpha4", alpha4_, 0.4);
 
   private_nh_.param("linerThreshold", linerThreshold_, 1.0);
   private_nh_.param("angularThreshold", angularThreshold_, 0.5);
+  // private_nh_.param("linerThreshold", linerThreshold_, 0.05);
+  // private_nh_.param("angularThreshold", angularThreshold_, 0.05);
   private_nh_.param("resampleThreshold", resampleThreshold_, 0.5);
-  private_nh_.param("particle_size", particle_size_, 550);
+  private_nh_.param("particle_size", particle_size_, 1000);
   private_nh_.param("xmin", xmin_, -10.0);
   private_nh_.param("ymin", ymin_, -10.0);
   private_nh_.param("zmin", zmin_, -1.0);
@@ -401,7 +404,9 @@ void EDOGMappingNode::publishMapCloud(const ros::Time& t)
     for(int y=0; y < smap.getMapSizeY(); y++)
     {
       EDOGMapping::IntPoint ip(x, y);
-      double mean=smap.cell(ip).mean();
+  	  const EDOGMapping::PointAccumulator& cell=smap.cell(ip);
+  	  double mean=cell.mean();
+      // double mean=smap.cell(ip).mean();
       if(mean != -1) {
         EDOGMapping::Point dp = smap.map2world(ip);
         pcl::PointXYZI tmp_pcl_p;
@@ -508,17 +513,17 @@ void
 EDOGMappingNode::pointcloudCallback(const sensor_msgs::PointCloud2ConstPtr& point_cloud)
 {
   latest_time_=point_cloud->header.stamp;
+
   pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_point_cloud(new pcl::PointCloud<pcl::PointXYZ>);
   pcl::fromROSMsg(*point_cloud, *pcl_point_cloud);
 
-  if (first_time_ == true) {
+  if (first_time_) {
     if(!initMapper(point_cloud->header.stamp))
       return;
   }
   
   tf::Pose relPose;
-  if (!getOdomPose(relPose, point_cloud->header.stamp))
-    return;
+  if (!getOdomPose(relPose, point_cloud->header.stamp)) return;
 
   // ROS_INFO("sampling");
   motionmodel_.setMotion(relPose, odoPose_);
@@ -570,6 +575,7 @@ EDOGMappingNode::pointcloudCallback(const sensor_msgs::PointCloud2ConstPtr& poin
     for (ParticleVector::iterator it=particles_.begin(); it!=particles_.end(); it++) it->previousPose_=it->pose_;
   }
 
+  publishParticleCloud(point_cloud->header.stamp);
 
   tf::Pose mpose = getParticles()[getBestParticleIndex()].pose_;
   tf::Stamped<tf::Pose> odom_to_map;
@@ -640,7 +646,7 @@ inline bool EDOGMappingNode::resample(const pcl::PointCloud<pcl::PointXYZ>& poin
 		oldGeneration[i] = particles_[i].node_;
   }
 
-  // if (neff_<resampleThreshold_*particles_.size()){
+  if (neff_<resampleThreshold_*particles_.size()){
 
   uniform_resampler<double, double> resampler;
   indexes_=resampler.resampleIndexes(weights_, adaptSize);
@@ -684,26 +690,26 @@ inline bool EDOGMappingNode::resample(const pcl::PointCloud<pcl::PointXYZ>& poin
     particles_.push_back(*it);
   }
   hasResampled = true;
-  // } else {
-  // 
-  // int index=0;
-  // TNodeVector::iterator node_it=oldGeneration.begin();
-  // for (ParticleVector::iterator it=particles_.begin(); it!=particles_.end(); it++){
-  //   TNode* node=0;
-  //   node=new TNode(it->pose_, 0.0, *node_it, 0);
-  //   
-  //   // node->reading=0;
-  //   it->node_=node;
+  } else {
+  
+  int index=0;
+  TNodeVector::iterator node_it=oldGeneration.begin();
+  for (ParticleVector::iterator it=particles_.begin(); it!=particles_.end(); it++){
+    TNode* node=0;
+    node=new TNode(it->pose_, 0.0, *node_it, 0);
+    
+    // node->reading=0;
+    it->node_=node;
 
-  //   scanmatcher_.invalidateActiveArea();
-  //   // ROS_INFO("registerScan");
-  //   scanmatcher_.registerScan(it->map, it->pose_, point_cloud);
-  //   it->previousIndex_=index;
-  //   index++;
-  //   node_it++;
-  //   
-  // }
-  // }
+    scanmatcher_.invalidateActiveArea();
+    // ROS_INFO("registerScan");
+    scanmatcher_.registerScan(it->map, it->pose_, point_cloud);
+    it->previousIndex_=index;
+    index++;
+    node_it++;
+    
+  }
+  }
 
   return hasResampled;
 }
@@ -728,7 +734,9 @@ inline void EDOGMappingNode::normalize(){
   neff_=0;
   for (ParticleVector::iterator it=particles_.begin(); it!=particles_.end(); it++){
     // weights_.push_back(exp(gain*(it->weight_-lmax)));
-    weights_.push_back(exp(3*(it->weight_-lmax)));
+    // weights_.push_back(exp(3*(it->weight_-lmax)));
+    weights_.push_back(exp(2*(it->weight_-lmax)));
+    // weights_.push_back(exp((it->weight_-lmax)));
     wcum+=weights_.back();
   }
 
@@ -798,57 +806,6 @@ int EDOGMappingNode::getBestParticleIndex() const{
   return (int) bi;
 }
 
-
-// int
-// main(int argc, char** argv)
-// {
-//     namespace po = boost::program_options; 
-//     po::options_description desc("Options"); 
-//     desc.add_options() 
-//     ("help", "Print help messages") 
-//     ("PointCloud_topic",  po::value<std::string>()->default_value("/hokuyo3d/hokuyo_cloud") ,"topic that contains the PointCcloud in the rosbag")
-//     ("bag_filename", po::value<std::string>()->required(), "ros bag filename") 
-//     ("seed", po::value<unsigned long int>()->default_value(0), "seed")
-//     ("max_duration_buffer", po::value<unsigned long int>()->default_value(999999), "max tf buffer duration") ;
-//     
-//     po::variables_map vm; 
-//     try 
-//     { 
-//         po::store(po::parse_command_line(argc, argv, desc),
-// 				  vm); 
-//         
-//         if ( vm.count("help")  ) 
-//         { 
-//             std::cout << "Basic Command Line Parameter App" << std::endl 
-//             << desc << std::endl; 
-//             return 0; 
-//         } 
-//         
-//         po::notify(vm); 
-//     } 
-//     catch(po::error& e) 
-//     { 
-//         std::cerr << "ERROR: " << e.what() << std::endl << std::endl; 
-//         std::cerr << desc << std::endl; 
-//         return -1; 
-//     } 
-//     
-//     std::string bag_fname = vm["bag_filename"].as<std::string>();
-//     std::string scan_topic = vm["point_cloud_topic"].as<std::string>();
-//     unsigned long int seed = vm["seed"].as<unsigned long int>();
-//     unsigned long int max_duration_buffer = vm["max_duration_buffer"].as<unsigned long int>();
-//     
-//     ros::init(argc, argv, "threedogmapping");
-//     EDOGMappingNode tdogmn(seed, max_duration_buffer);
-//     double start_time = ros::Time::now().toSec();
-//     tdogmn.startReplay(bag_fname, scan_topic);
-//     double end_time = ros::Time::now().toSec();
-//     ROS_INFO("replay stopped.");
-//     ROS_INFO("time score : %lf", end_time - start_time);
-// 
-//     ros::spin();
-//     return(0);
-// }
 
 int
 main(int argc, char** argv)

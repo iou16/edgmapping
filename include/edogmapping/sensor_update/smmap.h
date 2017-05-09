@@ -18,7 +18,7 @@ namespace EDOGMapping {
 		inline Point pmean() const { return 1./visits*Point(acc.x, acc.y); }
 		// inline operator double() const { return visits?diff/(double)visits:-1; }
         inline double mean() const { return visits?acc_diff/(double)visits:-1; }
-        inline double cov() const { return visits?(acc_diff_sq/(double)visits)-(acc_diff/(double)visits):-1; }
+        inline double cov() const { return visits?(acc_diff_sq/(double)visits)-((acc_diff/(double)visits)*(acc_diff/(double)visits)):-1; }
         inline double gmean() const { return g_visits?g_acc_diff/(double)g_visits:-1; }
 		inline void add(const PointAccumulator& p) {acc=acc+p.acc;/* n+=p.n;*/ visits+=p.visits; }
 		static const PointAccumulator& Unknown();
