@@ -107,17 +107,17 @@ double ScanMatcher::registerScan(ScanMatcherMap& map, const tf::Pose& p, const p
   for (int i=0; i < point_cloud.size(); i++){
   	IntPoint p1=map.world2map(rotation_point_cloud.points.at(i).x,rotation_point_cloud.points.at(i).y);
   	assert(p1.x>=0 && p1.y>=0);
-    for(int x=-1; x<=1; x++){
-      for(int y=-1; y<=1; y++){
-        if(x==0 && y==0) {
-  	      map.cell(IntPoint(p1.x+x, p1.y+y)).gupdate(rotation_point_cloud.points.at(i).z/4);
-        } else if(x==0 || y==0) {
-  	      map.cell(IntPoint(p1.x+x, p1.y+y)).gupdate(rotation_point_cloud.points.at(i).z/8);
-        } else {
-  	      map.cell(IntPoint(p1.x+x, p1.y+y)).gupdate(rotation_point_cloud.points.at(i).z/16);
-        }
-      }
-    }
+    // for(int x=-1; x<=1; x++){
+    //   for(int y=-1; y<=1; y++){
+    //     if(x==0 && y==0) {
+  	//       map.cell(IntPoint(p1.x+x, p1.y+y)).gupdate(rotation_point_cloud.points.at(i).z/4);
+    //     } else if(x==0 || y==0) {
+  	//       map.cell(IntPoint(p1.x+x, p1.y+y)).gupdate(rotation_point_cloud.points.at(i).z/8);
+    //     } else {
+  	//       map.cell(IntPoint(p1.x+x, p1.y+y)).gupdate(rotation_point_cloud.points.at(i).z/16);
+    //     }
+    //   }
+    // }
 
   	map.cell(p1).update(rotation_point_cloud.points.at(i).z, Point(rotation_point_cloud.points.at(i).x,rotation_point_cloud.points.at(i).y));
   }

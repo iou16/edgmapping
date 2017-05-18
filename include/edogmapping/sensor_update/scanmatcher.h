@@ -102,8 +102,8 @@ inline void ScanMatcher::likelihoodAndScore(double& s, double& l, const ScanMatc
     IntPoint iphit=map.world2map(phit_cloud.points.at(i).x,phit_cloud.points.at(i).y);
   	// const PointAccumulator& cell=map.cell_(iphit);
   	const PointAccumulator& cell=map.cell(iphit);
-  	double mu=cell.gmean()-phit_cloud.points.at(i).z;
-  	// double mu=cell.mean()-phit_cloud.points.at(i).z;
+  	// double mu=cell.gmean()-phit_cloud.points.at(i).z;
+  	double mu=cell.mean()-phit_cloud.points.at(i).z;
   	s+=exp(-1./m_gaussianSigma*mu*mu);
     l+=log(phit_cloud.points.at(i).z)+(-1./m_likelihoodSigma)*(mu*mu);
   }
