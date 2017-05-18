@@ -5,7 +5,7 @@
 #include <../utils/point.h>
 #define SIGHT_INC 1
 
-namespace EDOGMapping {
+namespace EDGMapping {
 
 	struct PointAccumulator{
 		typedef point<float> FloatPoint;

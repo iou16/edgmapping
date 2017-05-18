@@ -2,7 +2,7 @@
 #include <math.h>
 #include "stat.h"
 
-namespace EDOGMapping {
+namespace EDGMapping {
 	double pf_ran_gaussian(double sigma)
 	{
 		double x1, x2, w, r;

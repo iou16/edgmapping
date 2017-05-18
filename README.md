@@ -1,5 +1,5 @@
-# edogmapping
-edogmapping(Elevation Difference Grid Mapping)は,  
+# edgmapping
+edgmapping(Elevation Difference Grid Mapping)は,  
 高低差格子地図生成のためのFastSLAM 1.0です.
 
 人が生活している屋外環境を対象に,   

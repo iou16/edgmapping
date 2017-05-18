@@ -1,6 +1,6 @@
 #include "smmap.h"
 
-namespace EDOGMapping {
+namespace EDGMapping {
 
 const PointAccumulator& PointAccumulator::Unknown(){
 	if (! unknown_ptr)
