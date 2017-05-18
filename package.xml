@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>edogmapping</name>
+  <name>edgmapping</name>
   <version>0.0.0</version>
-  <description>The edogmapping package</description>
+  <description>The edgmapping package</description>
 
   <maintainer email="humio@todo.todo">humio</maintainer>
   <author>humio</author>

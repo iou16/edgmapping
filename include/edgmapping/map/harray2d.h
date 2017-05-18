@@ -5,7 +5,7 @@
 #include <utils/autoptr.h>
 #include "array2d.h"
 
-namespace EDOGMapping {
+namespace EDGMapping {
 
 template <class Cell>
 class HierarchicalArray2D: public Array2D<autoptr< Array2D<Cell> > >{

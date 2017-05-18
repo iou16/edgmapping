@@ -5,7 +5,7 @@
 #include "particlefilter.h"
 
 using namespace std;
-using namespace ThreeDOGMapping;
+using namespace EDGMapping;
 
 #define test(s) {cout << s <<  " " << flush;}
 #define testOk() {cout << "OK" << endl;}

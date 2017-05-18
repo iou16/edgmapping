@@ -5,7 +5,7 @@
 #define MotionModelCondtioningLinearCovariance 0.01
 #define MotionModelConditoningAngularCovariance 0.001
 
-namespace EDOGMapping {
+namespace EDGMapping {
 
   void MotionModel::setMotion(const tf::Pose& pnew, const tf::Pose& pold)
     {

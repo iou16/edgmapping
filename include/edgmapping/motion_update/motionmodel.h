@@ -8,7 +8,7 @@
 #include "../utils/stat.h"
 #include "../utils/macro_params.h"
 
-namespace EDOGMapping {
+namespace EDGMapping {
 
 	struct MotionModel{
       void setMotion(const tf::Pose& pnew, const tf::Pose& pold);

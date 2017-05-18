@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(edogmapping)
+project(edgmapping)
 
 set(CMAKE_CXX_FLAGS "-march=native -O2 -std=c++11 -fopenmp")
 set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS   "-march=native -O2 -fopenmp")
@@ -33,24 +33,24 @@ catkin_package(
 )
 
 include_directories(
-  include/edogmapping
-  include/edogmapping/motion_update
-  include/edogmapping/sensor_update
-  include/edogmapping/map
-  include/edogmapping/utils
-  include/edogmapping/particlefilter
+  include/edgmapping
+  include/edgmapping/motion_update
+  include/edgmapping/sensor_update
+  include/edgmapping/map
+  include/edgmapping/utils
+  include/edgmapping/particlefilter
   ${catkin_INCLUDE_DIRS} include
   ${Eigen_INCLUDE_DIRS}
 )
 
-add_executable(edogmapping
-  src/edogmapping_node.cpp
-  src/edogmapping/motion_update/motionmodel.cpp
-  src/edogmapping/sensor_update/smmap.cpp
-  src/edogmapping/sensor_update/scanmatcher.cpp
-  src/edogmapping/utils/stat.cpp
+add_executable(edgmapping
+  src/edgmapping_node.cpp
+  src/edgmapping/motion_update/motionmodel.cpp
+  src/edgmapping/sensor_update/smmap.cpp
+  src/edgmapping/sensor_update/scanmatcher.cpp
+  src/edgmapping/utils/stat.cpp
 )
 
-target_link_libraries(edogmapping
+target_link_libraries(edgmapping
   ${catkin_LIBRARIES}
 )

@@ -5,7 +5,7 @@
 #include "accessstate.h"
 #include "array2d.h"
 
-namespace EDOGMapping {
+namespace EDGMapping {
 /**
 The cells have to define the special value Cell::Unknown to handle with the unallocated areas.
 The cells have to define (int) constructor;

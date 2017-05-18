@@ -4,7 +4,7 @@
 #include <vector>
 #include "gvalues.h"
 
-namespace EDOGMapping {
+namespace EDGMapping {
 
 	double sampleGaussian(double sigma, unsigned long int S=0);
 	

@@ -7,7 +7,7 @@
 
 #include <iostream>
 
-namespace EDOGMapping {
+namespace EDGMapping {
 
 template<class Cell, const bool debug=false> class Array2D{
 	public:

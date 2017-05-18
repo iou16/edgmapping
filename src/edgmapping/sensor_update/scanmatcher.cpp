@@ -1,6 +1,6 @@
 #include "scanmatcher.h"
 
-namespace EDOGMapping {
+namespace EDGMapping {
 
 
 const double ScanMatcher::nullLikelihood=-.5;

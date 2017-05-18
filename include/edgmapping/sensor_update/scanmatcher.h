@@ -23,7 +23,7 @@
 
 #include <math.h>
 
-namespace EDOGMapping {
+namespace EDGMapping {
 
 class ScanMatcher{
 	public:

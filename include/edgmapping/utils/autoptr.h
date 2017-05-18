@@ -2,7 +2,7 @@
 #define AUTOPTR_H
 #include <assert.h>
 
-namespace EDOGMapping{
+namespace EDGMapping{
 
 template <class X>
 class autoptr{

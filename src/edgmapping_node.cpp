@@ -48,7 +48,7 @@
 #include <boost/program_options.hpp>
 
 
-class EDOGMappingNode
+class EDGMappingNode
 {
   struct TNode{
     TNode(const tf::Pose& p, double w, TNode* n=0, unsigned int c=0){
@@ -85,7 +85,7 @@ class EDOGMappingNode
   typedef std::deque<TNode*> TNodeDeque;
   
   struct Particle{
-    Particle(const EDOGMapping::ScanMatcherMap& m):
+    Particle(const EDGMapping::ScanMatcherMap& m):
       map(m), weight_(0), weightSum_(0), gweight_(0), previousIndex_(0),
       pose_(tf::Transform(tf::createQuaternionFromRPY(0, 0, 0),tf::Point(0,0,0))) {
         node_=0;
@@ -96,7 +96,7 @@ class EDOGMappingNode
   
     inline void setWeight(double w) {weight_=w;}
   
-    EDOGMapping::ScanMatcherMap map;
+    EDGMapping::ScanMatcherMap map;
     tf::Pose pose_;
     tf::Pose previousPose_;
     double weight_;
@@ -110,9 +110,9 @@ class EDOGMappingNode
 
 
   public:
-	EDOGMappingNode();
-    EDOGMappingNode(long unsigned int seed, long unsigned int max_duration_buffer);
-	~EDOGMappingNode();
+	EDGMappingNode();
+    EDGMappingNode(long unsigned int seed, long unsigned int max_duration_buffer);
+	~EDGMappingNode();
 
     void init();
     void startLiveSlam();
@@ -139,8 +139,8 @@ class EDOGMappingNode
 	std::string odom_frame_id_;
 	std::string global_frame_id_;
 
-    EDOGMapping::MotionModel motionmodel_;
-    EDOGMapping::ScanMatcher scanmatcher_;
+    EDGMapping::MotionModel motionmodel_;
+    EDGMapping::ScanMatcher scanmatcher_;
 
     ros::Duration map_update_interval_;
     tf::Transform map_to_odom_;
@@ -157,7 +157,7 @@ class EDOGMappingNode
     inline bool resample(const pcl::PointCloud<pcl::PointXYZ>& point_cloud, int adaptSize = 0); 
     void updateTreeWeights(bool weightsAlreadyNormalized = false);
     inline void resetTree();
-    double propagateWeight(EDOGMappingNode::TNode* n, double weight);
+    double propagateWeight(EDGMappingNode::TNode* n, double weight);
     double propagateWeights();
     inline const ParticleVector& getParticles() const {return particles_;};
     int getBestParticleIndex() const;
@@ -222,7 +222,7 @@ class EDOGMappingNode
     ros::Time last_map_update_;
 };
 
-EDOGMappingNode::EDOGMappingNode():
+EDGMappingNode::EDGMappingNode():
 	private_nh_("~"),  tf_(ros::Duration(240)), 
     map_to_odom_(tf::Transform(tf::createQuaternionFromRPY( 0, 0, 0 ), tf::Point(0, 0, 0 ))), latest_time_(0.0), last_map_update_(0.0)
 {
@@ -230,16 +230,16 @@ EDOGMappingNode::EDOGMappingNode():
   init();
 }
 
-EDOGMappingNode::EDOGMappingNode(long unsigned int seed, long unsigned int max_duration_buffer):
+EDGMappingNode::EDGMappingNode(long unsigned int seed, long unsigned int max_duration_buffer):
 	private_nh_("~"),  seed_(seed), tf_(ros::Duration(max_duration_buffer)),
     map_to_odom_(tf::Transform(tf::createQuaternionFromRPY( 0, 0, 0 ), tf::Point(0, 0, 0 )))
 {
   init();
 }
 
-EDOGMappingNode::~EDOGMappingNode(){}
+EDGMappingNode::~EDGMappingNode(){}
 
-void EDOGMappingNode::init()
+void EDGMappingNode::init()
 {
   tfB_ = new tf::TransformBroadcaster();
   particlecloud_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particlecloud", 2, true);
@@ -295,14 +295,14 @@ void EDOGMappingNode::init()
   obsSigmaGain_=3.0;
 }
 
-void EDOGMappingNode::startLiveSlam()
+void EDGMappingNode::startLiveSlam()
 {
-  point_cloud_sub_ = private_nh_.subscribe(std::string("/elevation_difference_cloud"), 100, &EDOGMappingNode::pointcloudCallback, this);
+  point_cloud_sub_ = private_nh_.subscribe(std::string("/elevation_difference_cloud"), 100, &EDGMappingNode::pointcloudCallback, this);
   
-  transform_thread_ = new boost::thread(boost::bind(&EDOGMappingNode::publishLoop, this, transform_publish_period_));
+  transform_thread_ = new boost::thread(boost::bind(&EDGMappingNode::publishLoop, this, transform_publish_period_));
 }
 
-void EDOGMappingNode::startReplay(const std::string & bag_fname, std::string point_cloud_topic)
+void EDGMappingNode::startReplay(const std::string & bag_fname, std::string point_cloud_topic)
 {
   double transform_publish_period;
   ros::NodeHandle private_nh_("~");
@@ -352,12 +352,12 @@ void EDOGMappingNode::startReplay(const std::string & bag_fname, std::string poi
   pc_msg.clear();
   for (int x=0; x < particles_.at(best).map.getMapSizeX(); x++) {
     for (int y=0; y < particles_.at(best).map.getMapSizeY(); y++) {
-        EDOGMapping::IntPoint p(x, y);
+        EDGMapping::IntPoint p(x, y);
         // double occ=particles_.at(best).map.cell_(p);
         // double occ=particles_.at(best).map.cell(p);
         // assert(occ <= 1.0);
         // if(occ > edThreshold_) {
-          EDOGMapping::Point pc_p = particles_.at(best).map.map2world(x,y);
+          EDGMapping::Point pc_p = particles_.at(best).map.map2world(x,y);
           
           pcl::PointXYZ p_msg(pc_p.x,pc_p.y, 0);
           pc_msg.push_back(p_msg);
@@ -369,7 +369,7 @@ void EDOGMappingNode::startReplay(const std::string & bag_fname, std::string poi
   bag.close();
 }
 
-void EDOGMappingNode::publishLoop(double transform_publish_period){
+void EDGMappingNode::publishLoop(double transform_publish_period){
   if(transform_publish_period == 0)
     return;
 
@@ -380,7 +380,7 @@ void EDOGMappingNode::publishLoop(double transform_publish_period){
   }
 }
 
-void EDOGMappingNode::publishTransform()
+void EDGMappingNode::publishTransform()
 {
   if(first_time_) return;
   map_to_odom_mutex_.lock();
@@ -392,10 +392,10 @@ void EDOGMappingNode::publishTransform()
   map_to_odom_mutex_.unlock();
 }
 
-void EDOGMappingNode::publishMapCloud(const ros::Time& t)
+void EDGMappingNode::publishMapCloud(const ros::Time& t)
 {
   boost::mutex::scoped_lock map_lock (map_mutex_);
-  EDOGMapping::ScanMatcherMap smap = getParticles()[getBestParticleIndex()].map;
+  EDGMapping::ScanMatcherMap smap = getParticles()[getBestParticleIndex()].map;
 
   pcl::PointCloud<pcl::PointXYZI> tmp_pcl_cloud;
   tmp_pcl_cloud.clear();
@@ -403,12 +403,12 @@ void EDOGMappingNode::publishMapCloud(const ros::Time& t)
   {
     for(int y=0; y < smap.getMapSizeY(); y++)
     {
-      EDOGMapping::IntPoint ip(x, y);
-  	  const EDOGMapping::PointAccumulator& cell=smap.cell(ip);
+      EDGMapping::IntPoint ip(x, y);
+  	  const EDGMapping::PointAccumulator& cell=smap.cell(ip);
   	  double mean=cell.mean();
       // double mean=smap.cell(ip).mean();
       if(mean != -1) {
-        EDOGMapping::Point dp = smap.map2world(ip);
+        EDGMapping::Point dp = smap.map2world(ip);
         pcl::PointXYZI tmp_pcl_p;
         tmp_pcl_p.x = dp.x;
         tmp_pcl_p.y = dp.y;
@@ -428,13 +428,13 @@ void EDOGMappingNode::publishMapCloud(const ros::Time& t)
 }
 
 bool
-EDOGMappingNode::initMapper(const ros::Time& t)
+EDGMappingNode::initMapper(const ros::Time& t)
 {
   if (!getOdomPose(odoPose_, t)) odoPose_ = tf::Pose(tf::Transform(tf::createQuaternionFromRPY(0,0,0),tf::Point(0,0,0)));
 
   particles_.clear();
   TNode* node=new TNode(odoPose_, 0, 0, 0);
-  EDOGMapping::ScanMatcherMap lmap(EDOGMapping::Point(xmin_+xmax_, ymin_+ymax_)*.5, xmax_-xmin_, ymax_-ymin_, delta_);
+  EDGMapping::ScanMatcherMap lmap(EDGMapping::Point(xmin_+xmax_, ymin_+ymax_)*.5, xmax_-xmin_, ymax_-ymin_, delta_);
   for (unsigned int i=0; i<particle_size_; i++) {
     particles_.push_back(Particle(lmap));
     particles_.back().pose_=odoPose_;
@@ -466,7 +466,7 @@ EDOGMappingNode::initMapper(const ros::Time& t)
   motionmodel_.alpha3 = alpha3_;
   motionmodel_.alpha4 = alpha4_;
 
-  EDOGMapping::sampleGaussian(1,seed_);
+  EDGMapping::sampleGaussian(1,seed_);
 
   last_map_update_ = t;
 
@@ -475,7 +475,7 @@ EDOGMappingNode::initMapper(const ros::Time& t)
 }
 
 bool
-EDOGMappingNode::getOdomPose(tf::Pose& pose, const ros::Time& t)
+EDGMappingNode::getOdomPose(tf::Pose& pose, const ros::Time& t)
 {
   tf::Stamped<tf::Pose> ident (tf::Transform(tf::createQuaternionFromRPY(0,0,0),
                                            tf::Vector3(0,0,0)), t, base_frame_id_);
@@ -495,7 +495,7 @@ EDOGMappingNode::getOdomPose(tf::Pose& pose, const ros::Time& t)
   return true;
 }
 
-void EDOGMappingNode::publishParticleCloud(const ros::Time& t)
+void EDGMappingNode::publishParticleCloud(const ros::Time& t)
 {
   geometry_msgs::PoseArray cloud_msg;
   cloud_msg.header.stamp = t;
@@ -510,7 +510,7 @@ void EDOGMappingNode::publishParticleCloud(const ros::Time& t)
 }
 
 void
-EDOGMappingNode::pointcloudCallback(const sensor_msgs::PointCloud2ConstPtr& point_cloud)
+EDGMappingNode::pointcloudCallback(const sensor_msgs::PointCloud2ConstPtr& point_cloud)
 {
   latest_time_=point_cloud->header.stamp;
 
@@ -613,7 +613,7 @@ EDOGMappingNode::pointcloudCallback(const sensor_msgs::PointCloud2ConstPtr& poin
   // ROS_INFO("END");
 }
 
-inline void EDOGMappingNode::scanMatch(const pcl::PointCloud<pcl::PointXYZ>& point_cloud){
+inline void EDGMappingNode::scanMatch(const pcl::PointCloud<pcl::PointXYZ>& point_cloud){
   for (ParticleVector::iterator it=particles_.begin(); it!=particles_.end(); it++){
     // tf::Pose corrected;
     double score, l, s;
@@ -636,7 +636,7 @@ inline void EDOGMappingNode::scanMatch(const pcl::PointCloud<pcl::PointXYZ>& poi
   }
 }
 
-inline bool EDOGMappingNode::resample(const pcl::PointCloud<pcl::PointXYZ>& point_cloud, int adaptSize){
+inline bool EDGMappingNode::resample(const pcl::PointCloud<pcl::PointXYZ>& point_cloud, int adaptSize){
 
   bool hasResampled = false;
 
@@ -714,15 +714,15 @@ inline bool EDOGMappingNode::resample(const pcl::PointCloud<pcl::PointXYZ>& poin
   return hasResampled;
 }
 
-void EDOGMappingNode::updateTreeWeights(bool weightsAlreadyNormalized){
+void EDGMappingNode::updateTreeWeights(bool weightsAlreadyNormalized){
   if (!weightsAlreadyNormalized) {
-    EDOGMappingNode::normalize();
+    EDGMappingNode::normalize();
   }
   resetTree();
   propagateWeights();
 }
 
-inline void EDOGMappingNode::normalize(){
+inline void EDGMappingNode::normalize(){
   double gain=1./(obsSigmaGain_*particles_.size())*10;
   double lmax= -std::numeric_limits<double>::max();
   for (ParticleVector::iterator it=particles_.begin(); it!=particles_.end(); it++){
@@ -749,7 +749,7 @@ inline void EDOGMappingNode::normalize(){
   neff_=1./neff_;
 }
 
-inline void EDOGMappingNode::resetTree(){
+inline void EDGMappingNode::resetTree(){
   for (ParticleVector::iterator it=particles_.begin(); it!=particles_.end(); it++){
     TNode* n=it->node_;
     while (n){
@@ -760,7 +760,7 @@ inline void EDOGMappingNode::resetTree(){
   }
 }
 
-double EDOGMappingNode::propagateWeight(EDOGMappingNode::TNode* n, double weight){
+double EDGMappingNode::propagateWeight(EDGMappingNode::TNode* n, double weight){
 	if (!n)
 		return weight;
 	double w=0;
@@ -773,7 +773,7 @@ double EDOGMappingNode::propagateWeight(EDOGMappingNode::TNode* n, double weight
 	return w;
 }
 
-double EDOGMappingNode::propagateWeights(){
+double EDGMappingNode::propagateWeights(){
   double lastNodeWeight=0;
   double aw=0;
 
@@ -795,7 +795,7 @@ double EDOGMappingNode::propagateWeights(){
 }
 
 
-int EDOGMappingNode::getBestParticleIndex() const{
+int EDGMappingNode::getBestParticleIndex() const{
   unsigned int bi=0;
   double bw=-std::numeric_limits<double>::max();
   for (unsigned int i=0; i<particles_.size(); i++)
@@ -810,10 +810,10 @@ int EDOGMappingNode::getBestParticleIndex() const{
 int
 main(int argc, char** argv)
 {
-  ros::init(argc, argv, "edogmapping");
+  ros::init(argc, argv, "edgmapping");
 
-  EDOGMappingNode edogmn;
-  edogmn.startLiveSlam();
+  EDGMappingNode edgmn;
+  edgmn.startLiveSlam();
   ros::spin();
 
   return(0);

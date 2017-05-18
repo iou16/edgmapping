@@ -7,7 +7,7 @@
 
 #define DEBUG_STREAM cerr << __PRETTY_FUNCTION__ << ":" //FIXME
 
-namespace EDOGMapping {
+namespace EDGMapping {
 
 template <class T>
 struct point{
