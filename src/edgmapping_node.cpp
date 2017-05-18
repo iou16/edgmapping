@@ -297,7 +297,7 @@ void EDGMappingNode::init()
 
 void EDGMappingNode::startLiveSlam()
 {
-  point_cloud_sub_ = private_nh_.subscribe(std::string("/elevation_difference_cloud"), 100, &EDGMappingNode::pointcloudCallback, this);
+  point_cloud_sub_ = private_nh_.subscribe(std::string("/edgcloud"), 100, &EDGMappingNode::pointcloudCallback, this);
   
   transform_thread_ = new boost::thread(boost::bind(&EDGMappingNode::publishLoop, this, transform_publish_period_));
 }
