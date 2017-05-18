@@ -11,6 +11,8 @@
 #include <geometry_msgs/Quaternion.h>
 #include <geometry_msgs/QuaternionStamped.h>
 
+#include <edgmap_msgs/ElevantionDifferenceGrid.h>
+
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/message_filter.h>
@@ -126,6 +128,7 @@ class EDOGMappingNode
     ros::Subscriber point_cloud_sub_;
     ros::Publisher particlecloud_pub_;
     ros::Publisher mapcloud_pub_;
+    ros::Publisher map_pub_;
 
 	tf::TransformListener tf_;
     tf::TransformBroadcaster* tfB_;
@@ -150,7 +153,7 @@ class EDOGMappingNode
     bool initMapper(const ros::Time& t);
     bool getOdomPose(tf::Pose& pose, const ros::Time& t);
     void publishParticleCloud(const ros::Time& t);
-    void publishMapCloud(const ros::Time& t);
+    void publishMap(const ros::Time& t);
 
     inline void scanMatch(const pcl::PointCloud<pcl::PointXYZ>& point_cloud);
     inline void normalize();
@@ -244,6 +247,7 @@ void EDOGMappingNode::init()
   tfB_ = new tf::TransformBroadcaster();
   particlecloud_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particlecloud", 2, true);
   mapcloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("mapcloud", 2, true);
+  map_pub_ = nh_.advertise<edgmap_msgs::ElevantionDifferenceGrid>("map", 2, true);
 
   first_time_ = true;
 
@@ -392,13 +396,16 @@ void EDOGMappingNode::publishTransform()
   map_to_odom_mutex_.unlock();
 }
 
-void EDOGMappingNode::publishMapCloud(const ros::Time& t)
+void EDOGMappingNode::publishMap(const ros::Time& t)
 {
   boost::mutex::scoped_lock map_lock (map_mutex_);
   EDOGMapping::ScanMatcherMap smap = getParticles()[getBestParticleIndex()].map;
 
   pcl::PointCloud<pcl::PointXYZI> tmp_pcl_cloud;
+  edgmap_msgs::ElevantionDifferenceGrid map;
   tmp_pcl_cloud.clear();
+  map.cells.clear();
+  map.data.clear();
   for(int x=0; x < smap.getMapSizeX(); x++)
   {
     for(int y=0; y < smap.getMapSizeY(); y++)
@@ -413,18 +420,33 @@ void EDOGMappingNode::publishMapCloud(const ros::Time& t)
         tmp_pcl_p.x = dp.x;
         tmp_pcl_p.y = dp.y;
         tmp_pcl_p.z = mean;
-        tmp_pcl_p.intensity = smap.cell(ip).cov();
+        tmp_pcl_p.intensity = cell.cov();
         tmp_pcl_cloud.push_back(tmp_pcl_p);
+
+        geometry_msgs::Point tmp_p;
+        tmp_p.x = dp.x;
+        tmp_p.y = dp.y;
+        tmp_p.z = mean;
+        map.cells.push_back(tmp_p);
+        map.data.push_back(cell.cov());
       }
     }
   }
 
   sensor_msgs::PointCloud2 map_cloud2;
   toROSMsg(tmp_pcl_cloud, map_cloud2);
-  map_cloud2.header.stamp = t;
-  map_cloud2.header.frame_id = tf_.resolve( global_frame_id_ );
-
   mapcloud_pub_.publish(map_cloud2);
+
+  map.header.stamp = t;
+  map.header.frame_id = tf_.resolve( global_frame_id_ );
+  map.info.map_load_time = t;
+  map.info.resolution = delta_;
+  map.info.width = smap.getMapSizeX();
+  map.info.height = smap.getMapSizeY();
+  map.info.origin.position.x = xmin_;
+  map.info.origin.position.y = ymin_;
+  map_pub_.publish(map);
+
 }
 
 bool
@@ -603,7 +625,8 @@ EDOGMappingNode::pointcloudCallback(const sensor_msgs::PointCloud2ConstPtr& poin
   map_to_odom_mutex_.unlock();
 
   if(first_time_ || (point_cloud->header.stamp - last_map_update_) > map_update_interval_){
-      publishMapCloud(point_cloud->header.stamp);
+      // ROS_INFO("publishMap");
+      publishMap(point_cloud->header.stamp);
       last_map_update_ = point_cloud->header.stamp;
       // ROS_INFO("Updated the map!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
   }
